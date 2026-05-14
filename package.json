@@ -1,0 +1,17 @@
+{
+  "name": "playwright-env-validator",
+  "version": "1.0.0",
+  "description": "Corporate environment validation for Playwright Automation Bootcamp",
+  "scripts": {
+    "preflight":    "node check-env.js",
+    "setup":        "node setup-testmart.js",
+    "test":         "npx playwright test",
+    "validate":     "node check-env.js && node setup-testmart.js && npx playwright test --reporter=html,list",
+    "report":       "npx playwright show-report validation-results/html"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0"
+  }
+}

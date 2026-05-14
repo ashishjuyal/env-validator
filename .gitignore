@@ -1,0 +1,7 @@
+node_modules/
+testmart-download/
+validation-results/
+*.db
+*.db-shm
+*.db-wal
+.env

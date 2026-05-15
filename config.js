@@ -14,12 +14,10 @@
 
 module.exports = {
   TESTMART_GITHUB_ZIP: process.env.TESTMART_GITHUB_ZIP
-    || 'https://github.com/YOUR_ORG/testmart/archive/refs/heads/main.zip',
+    || 'https://github.com/ashishjuyal/testmart/archive/refs/heads/main.zip',
 
   ARTIFACTORY_URL: process.env.ARTIFACTORY_URL
     || null,
 
   TESTMART_PORT: parseInt(process.env.TESTMART_PORT || '3000', 10),
-
-  TESTMART_LOCAL_PATH: process.env.TESTMART_LOCAL_PATH || null,
 };

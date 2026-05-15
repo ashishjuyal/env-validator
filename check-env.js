@@ -194,16 +194,6 @@ function checkDocker() {
   return record('Docker', 'PASS', v);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// SECTION 4 — Performance testing tools (Session 7)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-function checkK6() {
-  const v = cmdFirstLine('k6 version');
-  return v
-    ? record('k6 (performance testing)', 'PASS', v)
-    : record('k6 (performance testing)', 'WARN', 'Not found — needed for Session 7 performance testing. Install from k6.io');
-}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SECTION 5 — PrintDeps / execution security
@@ -275,7 +265,32 @@ async function checkArtifactory() {
   if (!config.ARTIFACTORY_URL) {
     return record('Connectivity: GCP Artifactory', 'SKIP', 'ARTIFACTORY_URL not set in config.js');
   }
-  return checkConnectivity('GCP Artifactory', config.ARTIFACTORY_URL);
+
+  const r = await httpGet(config.ARTIFACTORY_URL);
+
+  if (!r.ok) {
+    return record('Connectivity: GCP Artifactory', 'FAIL',
+      `Cannot reach ${config.ARTIFACTORY_URL} — ${r.error}. Check firewall / proxy settings.`);
+  }
+
+  if (r.status === 401) {
+    return record('Connectivity: GCP Artifactory', 'WARN',
+      'Server reachable (HTTP 401) but not authenticated. ' +
+      'Ensure your ~/.npmrc contains the correct auth token for this registry. ' +
+      'See README — Prerequisites section for setup instructions.');
+  }
+
+  if (r.status === 403) {
+    return record('Connectivity: GCP Artifactory', 'WARN',
+      'Server reachable (HTTP 403) but access is forbidden. ' +
+      'Your auth token may have expired or lack read permissions on this repository.');
+  }
+
+  if (r.status < 500) {
+    return record('Connectivity: GCP Artifactory', 'PASS', `HTTP ${r.status} — reachable and responding`);
+  }
+
+  return record('Connectivity: GCP Artifactory', 'FAIL', `HTTP ${r.status} — server error`);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -292,7 +307,8 @@ const SESSION_PACKAGES = {
   'Session 5 (BDD + Mocking)': [
     '@cucumber/cucumber',
     'ajv',
-    'mokapi',
+    // mokapi is NOT an npm package — it is a standalone Go binary / Docker image.
+    // It is used for instructor demos only. Check Docker availability separately (Section 3).
   ],
   'Session 6 (Visual + Allure)': [
     'allure-playwright',
@@ -394,11 +410,18 @@ function buildSessionReadiness() {
     });
   }
 
-  ['@cucumber/cucumber', 'ajv', 'mokapi'].forEach(pkg => {
+  ['@cucumber/cucumber', 'ajv'].forEach(pkg => {
     if (!pkgOk('Session 5 (BDD + Mocking)', pkg)) {
       sessions['Session 5 — BDD + Mocking'].blockers.push(`${pkg} not in registry`);
     }
   });
+
+  // Mokapi runs via Docker for instructor demos — flag as a warning, not a blocker
+  if (!dockerOk) {
+    sessions['Session 5 — BDD + Mocking'].blockers.push(
+      'Docker not available — Mokapi demo will run from instructor machine only'
+    );
+  }
 
   ['allure-playwright', 'allure-commandline'].forEach(pkg => {
     if (!pkgOk('Session 6 (Visual + Allure)', pkg)) {
@@ -490,24 +513,20 @@ function printOverallSummary() {
   section('3. Docker  (Session 5 — Mokapi)');
   checkDocker();
 
-  // ── 4. Performance tooling ─────────────────────────────────────────────────
-  section('4. Performance Tooling  (Session 7)');
-  checkK6();
-
-  // ── 5. Execution security ──────────────────────────────────────────────────
-  section('5. Execution Security');
+  // ── 4. Execution security ──────────────────────────────────────────────────
+  section('4. Execution Security');
   checkPrintDeps();
   checkPlaywrightBinaries();
 
   // ── 6. Network ────────────────────────────────────────────────────────────
-  section('6. Network & Registry');
+  section('5. Network & Registry');
   checkNpmRegistry();
   await checkConnectivity('GitHub', 'https://github.com');
   await checkConnectivity('Public npm', 'https://registry.npmjs.org');
   await checkArtifactory();
 
   // ── 7. Package availability ────────────────────────────────────────────────
-  section('7. npm Package Availability by Session');
+  section('6. npm Package Availability by Session');
   await checkPackageAvailability();
 
   // ── 8. Session readiness ───────────────────────────────────────────────────

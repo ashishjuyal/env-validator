@@ -122,30 +122,17 @@ function waitForTestMart(port, timeoutMs = 30000) {
   const port = config.TESTMART_PORT;
   let testmartDir;
 
-  // ── 1. Resolve source ──────────────────────────────────────────────────────
-  if (config.TESTMART_LOCAL_PATH && fs.existsSync(config.TESTMART_LOCAL_PATH)) {
-    testmartDir = path.resolve(config.TESTMART_LOCAL_PATH);
-    ok(`Using local TestMart at: ${testmartDir}`);
-  } else {
-    const zipUrl = config.TESTMART_GITHUB_ZIP;
-    if (zipUrl.includes('YOUR_ORG')) {
-      fail(
-        'TESTMART_GITHUB_ZIP is not configured.\n' +
-        '  Either set TESTMART_LOCAL_PATH to your local testmart/ folder,\n' +
-        '  or update config.js with the public GitHub ZIP URL.'
-      );
-    }
+  // ── 1. Download TestMart from GitHub ─────────────────────────────────────
+  const zipUrl     = config.TESTMART_GITHUB_ZIP;
+  const zipDest    = 'validation-results/testmart.zip';
+  const extractDir = 'testmart-download';
 
-    const zipDest    = 'validation-results/testmart.zip';
-    const extractDir = 'testmart-download';
+  await downloadFile(zipUrl, zipDest);
+  ok(`Downloaded to ${zipDest}`);
 
-    await downloadFile(zipUrl, zipDest);
-    ok(`Downloaded to ${zipDest}`);
-
-    extractZip(zipDest, extractDir);
-    testmartDir = findTestMartRoot(extractDir);
-    ok(`Extracted TestMart to ${testmartDir}`);
-  }
+  extractZip(zipDest, extractDir);
+  testmartDir = findTestMartRoot(extractDir);
+  ok(`Extracted TestMart to ${testmartDir}`);
 
   // ── 2. npm install ────────────────────────────────────────────────────────
   info('Running npm install in TestMart directory ...');

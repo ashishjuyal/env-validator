@@ -266,9 +266,9 @@ or IT team.
 
 ---
 
-## About Mokapi (Session 5)
+## About Mokapi
 
-Mokapi is **not an npm package** — it is a standalone Go binary used for HTTP
+Mokapi is a standalone Go binary used for HTTP
 and Kafka mocking. It is demonstrated by the instructor and does not require
 installation by participants.
 

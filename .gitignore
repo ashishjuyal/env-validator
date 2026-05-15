@@ -1,6 +1,7 @@
 node_modules/
 testmart-download/
 validation-results/
+playwright-report/
 *.db
 *.db-shm
 *.db-wal

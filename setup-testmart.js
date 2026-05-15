@@ -3,8 +3,7 @@
  * setup-testmart.js — Download, install, and start TestMart.
  *
  * Source priority:
- *   1. TESTMART_LOCAL_PATH in config.js  (use existing local copy)
- *   2. TESTMART_GITHUB_ZIP in config.js  (download from GitHub)
+ *   1. TESTMART_GITHUB_ZIP in config.js  (download from GitHub)
  *
  * Writes:
  *   validation-results/testmart.pid  — server PID (for teardown)
@@ -172,15 +171,21 @@ function waitForTestMart(port, timeoutMs = 30000) {
 
   // ── 5. Start TestMart ────────────────────────────────────────────────────
   info(`Starting TestMart on port ${port} ...`);
-  const logStream = fs.createWriteStream('validation-results/testmart.log', { flags: 'w' });
+
+  // fs.createWriteStream() returns a stream with fd:null until the 'open' event fires.
+  // spawn() with detached:true needs a synchronous numeric file descriptor — use openSync().
+  const logFd = fs.openSync('validation-results/testmart.log', 'w');
 
   const server = spawn('node', ['--no-warnings', 'server.js'], {
     cwd: testmartDir,
     detached: true,
-    stdio: ['ignore', logStream, logStream],
+    stdio: ['ignore', logFd, logFd],
     env: { ...process.env, PORT: String(port) },
   });
   server.unref();
+
+  // Parent closes its copy of the fd — the child process has inherited it
+  fs.closeSync(logFd);
 
   fs.writeFileSync('validation-results/testmart.pid', String(server.pid), 'utf8');
 

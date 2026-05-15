@@ -183,18 +183,24 @@ test.describe('2. TestMart UI', () => {
     await page.getByTestId('login-email').fill(STANDARD_USER.email);
     await page.getByTestId('login-password').fill(STANDARD_USER.password);
     await page.getByTestId('login-submit').click();
+    await expect(page.getByTestId('nav-logout')).toBeVisible();
+
+    // Read the current cart count before adding — the DB may already have items
+    // from previous test runs, so we assert +1 rather than an absolute value.
+    await page.goto(`${BASE_URL}/products`);
+    const badgeVisible = await page.getByTestId('cart-count').isVisible();
+    const countBefore  = badgeVisible
+      ? parseInt(await page.getByTestId('cart-count').textContent() || '0', 10)
+      : 0;
 
     // Add first in-stock product to cart
-    await page.goto(`${BASE_URL}/products`);
     await page.getByTestId('add-to-cart-btn').first().click();
 
-    // Toast appears
+    // Toast appears — confirms the async fetch completed and the API responded
     await expect(page.getByTestId('toast')).toBeVisible();
-    await expect(page.getByTestId('toast')).not.toBeVisible();
 
-    // Cart badge updates
-    await expect(page.getByTestId('cart-count')).toBeVisible();
-    await expect(page.getByTestId('cart-count')).toHaveText('1');
+    // Cart badge increments by exactly 1 — the real validation
+    await expect(page.getByTestId('cart-count')).toHaveText(String(countBefore + 1));
 
     const buf = await page.screenshot();
     saveScreenshot('07-add-to-cart', buf);
@@ -243,16 +249,24 @@ test.describe('3. TestMart API', () => {
   });
 
   test('3.4 API + UI cross-validation: product name matches', async ({ page, request }) => {
-    // Fetch product 1 from API
-    const res  = await request.get(`${BASE_URL}/api/products/1`);
-    expect(res.status()).toBe(200);
-    const { product } = await res.json();
+    // Fetch all products and use the first one — avoids hardcoding an ID
+    // that may differ across fresh SQLite databases (AUTOINCREMENT starts vary)
+    const listRes = await request.get(`${BASE_URL}/api/products`);
+    expect(listRes.status()).toBe(200);
+    const { products } = await listRes.json();
+    expect(products.length).toBeGreaterThan(0);
+    const product = products[0];
 
-    // Verify same name appears in the UI
-    await page.goto(`${BASE_URL}/products/1`);
-    await expect(page.getByTestId('product-detail-name')).toHaveText(product.name);
+    // Fetch the same product by its actual ID
+    const res = await request.get(`${BASE_URL}/api/products/${product.id}`);
+    expect(res.status()).toBe(200);
+    const { product: detail } = await res.json();
+
+    // Verify same name and price appear on the UI detail page
+    await page.goto(`${BASE_URL}/products/${detail.id}`);
+    await expect(page.getByTestId('product-detail-name')).toHaveText(detail.name);
     await expect(page.getByTestId('product-detail-price'))
-      .toHaveText(`$${product.price.toFixed(2)}`);
+      .toHaveText(`$${detail.price.toFixed(2)}`);
 
     const buf = await page.screenshot();
     saveScreenshot('08-api-ui-crossvalidation', buf);

@@ -5,6 +5,7 @@ const RESULTS_DIR = path.join(process.cwd(), 'validation-results');
 
 export default defineConfig({
   testDir: './tests',
+  globalTeardown: './global-teardown.js',
   timeout: 60_000,        // generous timeout for corporate networks
   retries: 1,             // one retry catches transient network issues
   workers: 1,             // sequential — avoids resource contention on restricted machines

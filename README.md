@@ -333,7 +333,12 @@ works in the same terminal.
 
 ---
 
-## Stopping TestMart after the session
+## Stopping TestMart
+
+TestMart is **stopped automatically** when the Playwright tests finish via
+`globalTeardown` in `playwright.config.ts`. You do not need to do anything.
+
+If you need to stop it manually (e.g. after a cancelled run):
 
 ```bash
 node -e "

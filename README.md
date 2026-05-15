@@ -66,14 +66,29 @@ package availability checks will fail without it.
 
 ---
 
-## Quick Start (one command)
+## Quick Start
+
+### First time (fresh download)
+
+```bash
+npm install
+npx playwright install chromium
+npm run validate
+```
+
+`npm install` and `npx playwright install chromium` are required once to install
+dependencies and download the Chromium browser binary. After that, re-runs only
+need `npm run validate`.
+
+### Subsequent runs
 
 ```bash
 npm run validate
 ```
 
-This runs all three stages in sequence: pre-flight checks, TestMart setup, then
-the full Playwright validation suite.
+`npm run validate` runs all three stages in sequence: pre-flight checks,
+TestMart download and setup, then the full Playwright test suite.
+TestMart is stopped automatically when tests finish.
 
 ---
 
@@ -92,7 +107,20 @@ ARTIFACTORY_URL: 'https://your-artifactory-host/artifactory/api/npm/npm-repo/',
 
 Everything else — including the TestMart GitHub URL — works out of the box.
 
-### Step 2 — Pre-flight check (no npm install needed)
+### Step 2 — Install dependencies
+
+```bash
+npm install
+npx playwright install chromium
+```
+
+`npm install` installs `@playwright/test`, `typescript`, and `@types/node`.
+`npx playwright install chromium` downloads the Chromium browser binary.
+
+If either command fails, run `node check-env.js` first to diagnose the issue
+(PrintDeps.exe, missing registry packages, etc.) before retrying.
+
+### Step 3 — Pre-flight check (no npm install needed)
 
 ```bash
 node check-env.js
@@ -111,10 +139,9 @@ and which are BLOCKED, with named blockers for IT to resolve.
 
 **Fix any FAIL items before continuing.**
 
-### Step 3 — Install Playwright
+### Step 4 — Install Playwright browsers (if not done in Step 2)
 
 ```bash
-npm install
 npx playwright install chromium
 ```
 
@@ -122,7 +149,7 @@ If `npx playwright install chromium` fails with a permission error, PrintDeps.ex
 or an endpoint security agent is blocking the executable.
 See the **Troubleshooting** section below.
 
-### Step 4 — Download and start TestMart
+### Step 5 — Download and start TestMart
 
 ```bash
 node setup-testmart.js
@@ -131,7 +158,7 @@ node setup-testmart.js
 Downloads TestMart from `https://github.com/ashishjuyal/testmart`, installs
 its dependencies, seeds the database, and starts the server on port 3000.
 
-### Step 5 — Run validation tests
+### Step 6 — Run validation tests
 
 ```bash
 npm test
@@ -144,7 +171,7 @@ Runs validation tests across five groups:
 4. Session package imports (Cucumber, ajv, Allure — Sessions 5 & 6)
 5. Corporate restrictions (PrintDeps, network egress, headed mode)
 
-### Step 6 — View the report
+### Step 7 — View the report
 
 ```bash
 npm run report
